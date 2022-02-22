@@ -1,0 +1,306 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This is a cf template",
+    "Parameters": {
+        "vpccidr": {
+            "Description": "cidr of vpc",
+            "Type": "String",
+            "Default": "192.168.0.0/16"
+        },
+        "subcidr": {
+            "Description": "cidr of subnet",
+            "Type": "List<String>",
+            "Default": "192.168.1.0/24, 192.168.2.0/24"
+        },
+        "az1": {
+            "Description": "az for subnets",
+            "Type": "AWS::EC2::AvailabilityZone::Name"
+        },
+        "az2": {
+            "Description": "az for subnets",
+            "Type": "AWS::EC2::AvailabilityZone::Name"
+        }
+    },
+    "Resources": {
+        "myvpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "vpccidr"
+                },
+                "EnableDnsHostnames": "True",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "sub1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "az1"
+                },
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "CidrBlock": {
+                    "Fn::Select": [
+                        0,
+                        {
+                            "Ref": "subcidr"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "sub2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "az2"
+                },
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "CidrBlock": {
+                    "Fn::Select": [
+                        1,
+                        {
+                            "Ref": "subcidr"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "myigw": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "AttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "InternetGatewayId": {
+                    "Ref": "myigw"
+                }
+            }
+        },
+        "sub1rt": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "sub1routeTableAssocName": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "sub1"
+                },
+                "RouteTableId": {
+                    "Ref": "sub1rt"
+                }
+            }
+        },
+        "sub2rt": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "sub2routeTableAssocName": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "sub2"
+                },
+                "RouteTableId": {
+                    "Ref": "sub2rt"
+                }
+            }
+        },
+        "sub1sg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "sg for sub1",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 443,
+                        "ToPort": 443,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "ssh,http,htps"
+                    }
+                ]
+            }
+        },
+        "sub2sg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "sg for sub2",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 3306,
+                        "ToPort": 3306,
+                        "CidrIp": {
+                            "Ref": "vpccidr"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "myvpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "3306 for mysql db"
+                    }
+                ]
+            }
+        },
+        "rdsDBSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupDescription": "sg for db",
+                "SubnetIds": [
+                    {
+                        "Ref": "sub1"
+                    },
+                    {
+                        "Ref": "sub2"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ]
+            }
+        },
+        "mysqlrdsDBInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "AllocatedStorage": "20",
+                "DBInstanceClass": "db.t2.micro",
+                "AllowMajorVersionUpgrade": "false",
+                "AutoMinorVersionUpgrade": "false",
+                "AvailabilityZone": {
+                    "Ref": "az2"
+                },
+                "BackupRetentionPeriod": "0",
+                "DBInstanceIdentifier": "database-1",
+                "DBName": "mydb",
+                "DBSubnetGroupName": {
+                    "Ref": "rdsDBSubnetGroup"
+                },
+                "Engine": "mysql",
+                "MasterUsername": "admin",
+                "MasterUserPassword": "adminadmin",
+                "MultiAZ": "false",
+                "PubliclyAccessible": "false",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ntier"
+                    }
+                ],
+                "VPCSecurityGroups": [
+                    {
+                        "Ref": "sub2sg"
+                    }
+                ]
+            }
+        },
+        "1st": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "KeyName": "kp",
+                "ImageId": "ami-0851b76e8b1bce90b",
+                "InstanceType": "t2.micro",
+                "Monitoring": "false",
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "true",
+                        "DeviceIndex": "0",
+                        "GroupSet": [
+                            {
+                                "Ref": "sub1sg"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Ref": "sub1"
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "web"
+                    }
+                ]
+            }
+        }
+    }
+}
