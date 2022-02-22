@@ -19,6 +19,59 @@
         "az2": {
             "Description": "az for subnets",
             "Type": "AWS::EC2::AvailabilityZone::Name"
+        },
+        "AllocatedStorage": {
+            "Description": "Size of the database",
+            "Type": "String",
+            "Default": "20"
+        },
+        "DBInstanceClass": {
+            "Description": "Size of the Datbase Instance",
+            "Type": "String",
+            "Default": "db.t2.micro"
+        },
+        "BackupRetentionPeriod": {
+            "Description": "Backup Period in Days",
+            "Type": "Number",
+            "Default": 0
+        },
+        "DBInstanceIdentifier": {
+            "Description": "Name of the rds instance",
+            "Type": "String",
+            "Default": "database-1"
+        },
+        "DBName": {
+            "Description": "Name of the rds database",
+            "Type": "String",
+            "Default": "mydb"
+        },
+        "MasterUsername": {
+            "Description": "UserName of the database",
+            "Type": "String",
+            "Default": "admin"
+        },
+        "MasterUserPassword": {
+            "Description": "Password for the database",
+            "Type": "String",
+            "Default": "adminadmin"
+        },
+        "MultiAZ": {
+            "Description": "Whether you need multi az or not",
+            "Type": "String",
+            "Default": "false",
+            "AllowedValues": [
+                "true",
+                "false"
+            ]
+        },
+        "KeyName": {
+            "Description": "pem file",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "InstanceType": {
+            "Description": "instance size of ec2",
+            "Type": "String",
+            "Default": "t2.micro"
         }
     },
     "Resources": {
@@ -242,23 +295,39 @@
         "mysqlrdsDBInstance": {
             "Type": "AWS::RDS::DBInstance",
             "Properties": {
-                "AllocatedStorage": "20",
-                "DBInstanceClass": "db.t2.micro",
+                "AllocatedStorage": {
+                    "Ref": "AllocatedStorage"
+                },
+                "DBInstanceClass": {
+                    "Ref": "DBInstanceClass"
+                },
                 "AllowMajorVersionUpgrade": "false",
                 "AutoMinorVersionUpgrade": "false",
                 "AvailabilityZone": {
                     "Ref": "az2"
                 },
-                "BackupRetentionPeriod": "0",
-                "DBInstanceIdentifier": "database-1",
-                "DBName": "mydb",
+                "BackupRetentionPeriod": {
+                    "Ref": "BackupRetentionPeriod"
+                },
+                "DBInstanceIdentifier": {
+                    "Ref": "DBInstanceIdentifier"
+                },
+                "DBName": {
+                    "Ref": "DBName"
+                },
                 "DBSubnetGroupName": {
                     "Ref": "rdsDBSubnetGroup"
                 },
                 "Engine": "mysql",
-                "MasterUsername": "admin",
-                "MasterUserPassword": "adminadmin",
-                "MultiAZ": "false",
+                "MasterUsername": {
+                    "Ref": "MasterUsername"
+                },
+                "MasterUserPassword": {
+                    "Ref": "MasterUserPassword"
+                },
+                "MultiAZ": {
+                    "Ref": "MultiAZ"
+                },
                 "PubliclyAccessible": "false",
                 "Tags": [
                     {
@@ -276,9 +345,13 @@
         "1st": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "KeyName": "kp",
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
                 "ImageId": "ami-0851b76e8b1bce90b",
-                "InstanceType": "t2.micro",
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
                 "Monitoring": "false",
                 "NetworkInterfaces": [
                     {
